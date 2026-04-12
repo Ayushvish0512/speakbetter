@@ -331,6 +331,10 @@
                     </button>
                 </div>
             </div>
+            <div id="historySection" class="feedback-section" style="margin-top: 3rem;">
+                <h3 style="margin-bottom: 1.5rem; color: var(--secondary)">Your Last 5 Attempts</h3>
+                <div id="historyList"></div>
+            </div>
         </div>
     </main>
 
@@ -461,6 +465,7 @@
             token = localStorage.getItem('token');
             loadTask();
             loadStats();
+            loadHistory();
         }
 
         async function loadTask() {
@@ -479,6 +484,27 @@
             });
             const stats = await res.json();
             document.getElementById('streakCount').innerText = stats.streak;
+        }
+
+        async function loadHistory() {
+            const res = await fetch('/progress/history', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const history = await res.json();
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            
+            history.slice(0, 5).forEach(session => {
+                const item = document.createElement('div');
+                item.className = 'feedback-card';
+                item.style.marginBottom = '1rem';
+                item.innerHTML = `
+                    <div style="font-size: 0.8rem; color: var(--text-dim)">${new Date(session.date).toLocaleDateString()}</div>
+                    <div style="font-weight: 600; margin: 0.5rem 0">"${session.user_input}"</div>
+                    <div style="color: #4ade80">→ ${session.corrected_text}</div>
+                `;
+                list.appendChild(item);
+            });
         }
 
         // Audio Recording Logic

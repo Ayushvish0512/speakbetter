@@ -14,7 +14,7 @@ if not api_key or api_key == "your_gemini_api_key_here":
     exit(1)
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-flash-latest')
 
 audio_path = r"C:\Users\Admin\Downloads\9773796763_7005737079_20251120_171342.mp3"
 
@@ -41,7 +41,10 @@ def test_audio():
     
     print("Generating content...")
     response = model.generate_content([prompt, audio_file])
-    print(response.text)
+    
+    with open("result.json", "w", encoding="utf-8") as f:
+        f.write(response.text)
+    print("Result saved to result.json")
 
 if __name__ == "__main__":
     test_audio()

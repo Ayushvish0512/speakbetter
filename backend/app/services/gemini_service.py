@@ -5,7 +5,7 @@ import json
 class GeminiService:
     def __init__(self):
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel('gemini-1.5-flash') # Using 1.5 flash as requested in PRD (corrected from 2.5)
+        self.model = genai.GenerativeModel('gemini-flash-latest') 
 
     async def analyze_audio(self, audio_path: str):
         # Upload the file to Gemini
