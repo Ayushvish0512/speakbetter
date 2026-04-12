@@ -34,9 +34,11 @@ app.include_router(submit.router, prefix="/submit", tags=["Submission"])
 app.include_router(task.router, prefix="/task", tags=["Task"])
 app.include_router(progress.router, prefix="/progress", tags=["Progress"])
 
+from fastapi.responses import FileResponse
+
 @app.get("/")
 async def root():
-    return {"message": "Welcome to SpeakBetter API"}
+    return FileResponse("app/static/index.html")
 
 @app.get("/ping")
 async def ping():

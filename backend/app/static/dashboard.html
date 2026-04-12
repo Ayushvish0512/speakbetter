@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SpeakBetter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .welcome-section {
+            margin-bottom: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .welcome-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .welcome-content p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            border: 1px solid var(--glass-border);
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 2.5rem;
+            font-weight: 800;
+            display: block;
+            margin-bottom: 0.25rem;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-desc {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 2rem;
+            border: 1px solid var(--glass-border);
+            height: 400px;
+        }
+
+        .recent-activity {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 2rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .activity-list {
+            list-style: none;
+            margin-top: 1.5rem;
+        }
+
+        .activity-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .score-pill {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .back-btn {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 1rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html" class="logo">SpeakBetter</a>
+        <a href="index.html" class="back-btn">Start Practice</a>
+    </header>
+
+    <main>
+        <div class="welcome-section">
+            <div class="welcome-content">
+                <h1 id="welcomeUser">Hello, Learner!</h1>
+                <p>Track your English fluency progress over time.</p>
+            </div>
+            <div class="stat-card" style="padding: 1rem 2rem;">
+                <span class="stat-num" id="currentStreak">0</span>
+                <span class="stat-desc">Streak</span>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <span class="stat-num" id="avgScore">0.0</span>
+                <span class="stat-desc">Avg Score</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" id="totalSessions">0</span>
+                <span class="stat-desc">Sessions</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num">B2</span>
+                <span class="stat-desc">Est. Level</span>
+            </div>
+        </div>
+
+        <div class="grid-layout">
+            <div class="chart-container">
+                <h3 style="margin-bottom: 1.5rem;">Score Progression</h3>
+                <canvas id="scoreChart"></canvas>
+            </div>
+            
+            <div class="recent-activity">
+                <h3 style="margin-bottom: 1rem;">Recent Sessions</h3>
+                <ul class="activity-list" id="activityList">
+                    <!-- Loaded dynamically -->
+                </ul>
+                <a href="index.html#history" style="display: block; margin-top: 1.5rem; color: var(--primary); text-decoration: none; font-size: 0.9rem;">View All History →</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = window.location.origin;
+        const token = localStorage.getItem('token');
+
+        if (!token) window.location.href = 'index.html';
+
+        async function initDashboard() {
+            try {
+                // Fetch User Stats
+                const statsRes = await fetch(`${API_BASE}/progress/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const stats = await statsRes.json();
+                document.getElementById('welcomeUser').textContent = `Hello, ${stats.name}!`;
+                document.getElementById('currentStreak').textContent = stats.streak;
+
+                // Fetch History for Chart and List
+                const historyRes = await fetch(`${API_BASE}/progress/history`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const history = await historyRes.json();
+                
+                updateStats(history);
+                renderChart(history);
+                renderActivity(history);
+
+            } catch (err) {
+                console.error('Failed to load dashboard', err);
+            }
+        }
+
+        function updateStats(history) {
+            if (history.length === 0) return;
+            const avg = history.reduce((sum, s) => sum + s.score, 0) / history.length;
+            document.getElementById('avgScore').textContent = avg.toFixed(1);
+            document.getElementById('totalSessions').textContent = history.length;
+        }
+
+        function renderActivity(history) {
+            const list = document.getElementById('activityList');
+            history.slice(0, 5).forEach(session => {
+                const date = new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const li = document.createElement('li');
+                li.className = 'activity-item';
+                li.innerHTML = `
+                    <span>${date}</span>
+                    <span class="score-pill">${session.score}/10</span>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function renderChart(history) {
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            const data = [...history].reverse();
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(s => new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                    datasets: [{
+                        label: 'English Score',
+                        data: data.map(s => s.score),
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ec4899',
+                        pointBorderColor: '#fff',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        },
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>

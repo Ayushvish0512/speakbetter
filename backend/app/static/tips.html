@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaking Tips - SpeakBetter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%);
+            padding: 2rem;
+        }
+
+        .container { max-width: 800px; margin: 0 auto; }
+        header { margin-bottom: 3rem; text-align: center; }
+        .logo { 
+            font-size: 1.5rem; 
+            font-weight: 800; 
+            text-decoration: none; 
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+        
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .subtitle { color: var(--text-dim); font-size: 1.1rem; }
+
+        .tip-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        h3 { color: var(--primary); margin-bottom: 1rem; font-size: 1.3rem; }
+        p { line-height: 1.6; color: var(--text-dim); }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 3rem;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="logo">SpeakBetter</a>
+            <h1>Speaking Mastery Tips</h1>
+            <p class="subtitle">Effective strategies to boost your confidence and fluency.</p>
+        </header>
+
+        <div class="tip-card">
+            <h3>1. The Shadowing Technique</h3>
+            <p>Listen to a native speaker and repeat exactly what they say at the same time. This helps with rhythm, stress, and intonation.</p>
+        </div>
+
+        <div class="tip-card">
+            <h3>2. Record & Review</h3>
+            <p>Always use SpeakBetter's recording feature! Listening to your own voice is the fastest way to spot repetitive errors and filler words.</p>
+        </div>
+
+        <div class="tip-card">
+            <h3>3. Think in English</h3>
+            <p>Instead of translating from Hindi in your head, try naming objects around you and describing your actions in English throughout the day.</p>
+        </div>
+
+        <div class="tip-card">
+            <h3>4. Don't Fear Mistakes</h3>
+            <p>Fluency is more important than perfect grammar. Focus on getting your message across first; the accuracy will come with practice.</p>
+        </div>
+
+        <a href="index.html" class="back-link">← Go Back to Practice</a>
+    </div>
+</body>
+</html>

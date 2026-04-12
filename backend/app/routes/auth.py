@@ -65,3 +65,15 @@ async def login(user_in: UserLogin):
 @router.get("/me", response_model=UserPublic)
 async def read_users_me(current_user: dict = Depends(get_current_user)):
     return current_user
+
+@router.put("/me")
+async def update_user_me(user_update: dict, current_user: dict = Depends(get_current_user)):
+    db = get_database()
+    # Update user name
+    if "name" in user_update:
+        await db["users"].update_one(
+            {"_id": current_user["_id"]},
+            {"$set": {"name": user_update["name"]}}
+        )
+        return {"status": "success", "message": "Profile updated"}
+    return {"status": "no change"}

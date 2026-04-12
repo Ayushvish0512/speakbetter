@@ -47,3 +47,30 @@ async def get_daily_task(current_user: dict = Depends(get_current_user)):
         "task_hi": task["task_hi"],
         "date": task["date"]
     }
+
+@router.get("/all")
+async def get_all_tasks(current_user: dict = Depends(get_current_user)):
+    db = get_database()
+    tasks = await db["tasks"].find().to_list(100)
+    for t in tasks:
+        t["_id"] = str(t["_id"])
+    return tasks
+
+@router.post("/")
+async def create_task(task_data: dict, current_user: dict = Depends(get_current_user)):
+    db = get_database()
+    # In a real app, check if user is admin
+    result = await db["tasks"].insert_one(task_data)
+    return {"id": str(result.inserted_id), "status": "created"}
+
+@router.put("/{task_id}")
+async def update_task(task_id: str, task_data: dict, current_user: dict = Depends(get_current_user)):
+    db = get_database()
+    from bson import ObjectId
+    result = await db["tasks"].update_one(
+        {"_id": ObjectId(task_id)},
+        {"$set": task_data}
+    )
+    if result.modified_count:
+        return {"status": "updated"}
+    return {"status": "no change"}
