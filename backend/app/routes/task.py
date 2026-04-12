@@ -19,11 +19,16 @@ async def get_daily_task(current_user: dict = Depends(get_current_user)):
         # Generate a new task using Gemini (or use a predefined list)
         # For simplicity, let's use a small predefined list or ask Gemini
         prompt = """
-        Generate a simple daily English speaking task for a Hindi-speaking beginner.
-        Example: "Describe your favorite food" or "What did you do yesterday?".
-        Return JSON: {"task_en": "Task in English", "task_hi": "Task in Hindi"}
+        You are a Language Learning Assistant. Generate a simple daily English speaking challenge for a Hindi speaker.
+        The task must be related to daily life, professional skills, or travel.
+        Example: "Describe your favorite childhood memory" or "How do you handle a busy day at work?".
+        Return EXACTLY this JSON format (no markdown):
+        {"task_en": "Task in English", "task_hi": "Task in Hindi"}
         """
-        response = gemini_service.model.generate_content(prompt)
+        response = gemini_service.client.models.generate_content(
+            model=gemini_service.analysis_model,
+            contents=prompt
+        )
         try:
             text = response.text.strip()
             if text.startswith("```json"): text = text[7:-3].strip()
