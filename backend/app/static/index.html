@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeakBetter - AI English Tutor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%);
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .user-nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .streak-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .task-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 2rem;
+            padding: 3rem;
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .task-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .day-label {
+            color: var(--secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+        }
+
+        .hi-task {
+            font-size: 1.25rem;
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .record-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .record-btn.recording {
+            background: var(--secondary);
+            animation: pulse 1.5s infinite;
+        }
+
+        .record-btn svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(236, 72, 153, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
+        }
+
+        .status-text {
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        .feedback-section {
+            display: none;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: left;
+        }
+
+        .score-box {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--primary);
+            border-radius: 1rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .corrected-text {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #4ade80;
+        }
+
+        .hindi-exp {
+            color: var(--text-dim);
+            font-style: italic;
+            border-left: 3px solid var(--secondary);
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-play {
+            padding: 0.75rem 1.5rem;
+            background: white;
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-play:hover {
+            transform: scale(1.05);
+            background: #f1f5f9;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background: var(--bg-dark);
+            border: 1px solid var(--glass-border);
+            padding: 3rem;
+            border-radius: 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dim);
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            color: white;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-dark);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">SpeakBetter</div>
+        <div class="user-nav">
+            <div id="streakContainer" class="streak-badge hidden">
+                🔥 <span id="streakCount">0</span> Days
+            </div>
+            <button id="logoutBtn" class="btn-play hidden" style="padding:0.4rem 1rem">Logout</button>
+        </div>
+    </header>
+
+    <main id="appContent" class="hidden">
+        <div class="task-card">
+            <span class="day-label" id="taskDate">Today's Task</span>
+            <h2 id="taskEn">Loading task...</h2>
+            <p id="hiTask" class="hi-task"></p>
+            
+            <div class="controls">
+                <button id="recordBtn" class="record-btn">
+                    <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                </button>
+                <div id="statusText" class="status-text">Click the mic and start speaking</div>
+            </div>
+
+            <div id="feedbackSection" class="feedback-section">
+                <div class="feedback-card">
+                    <div class="score-box">Score: <span id="score">0</span>/10</div>
+                    <div class="corrected-text" id="correctedText"></div>
+                    <div class="hindi-exp" id="hindiExp"></div>
+                    <div id="encouragement" style="margin-bottom: 1.5rem; color: var(--text-dim)"></div>
+                    <button id="playBtn" class="btn-play">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        Listen & Practice
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <h2 style="font-size: 1.5rem; margin-bottom: 2rem;">Welcome to SpeakBetter</h2>
+            <div id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="ravi@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••">
+                </div>
+                <button class="btn-submit" id="handleLogin">Get Started</button>
+                <p style="margin-top: 1rem; text-align: center; font-size: 0.9rem; color: var(--text-dim)">
+                    Don't have an account? <a href="#" id="showRegister" style="color: var(--primary)">Register</a>
+                </p>
+            </div>
+            <div id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="regName" placeholder="Ravi Kumar">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="regEmail" placeholder="ravi@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" placeholder="••••••••">
+                </div>
+                <button class="btn-submit" id="handleRegister">Create Account</button>
+                <p style="margin-top: 1rem; text-align: center; font-size: 0.9rem; color: var(--text-dim)">
+                    Already have an account? <a href="#" id="showLogin" style="color: var(--primary)">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = ''; // Same origin
+        let token = localStorage.getItem('token');
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // UI Elements
+        const authModal = document.getElementById('authModal');
+        const appContent = document.getElementById('appContent');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const streakContainer = document.getElementById('streakContainer');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Initialization
+        if (token) {
+            showApp();
+        }
+
+        document.getElementById('showRegister').onclick = () => {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+        };
+
+        document.getElementById('showLogin').onclick = () => {
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        };
+
+        logoutBtn.onclick = () => {
+            localStorage.removeItem('token');
+            location.reload();
+        };
+
+        // Auth Logic
+        document.getElementById('handleLogin').onclick = async () => {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, name: '' }) // name dummy for simplicity
+                });
+                const data = await res.json();
+                if (data.access_token) {
+                    localStorage.setItem('token', data.access_token);
+                    showApp();
+                } else {
+                    alert(data.detail || 'Login failed');
+                }
+            } catch (err) {
+                alert('Connection error');
+            }
+        };
+
+        document.getElementById('handleRegister').onclick = async () => {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+                if (data.access_token) {
+                    localStorage.setItem('token', data.access_token);
+                    showApp();
+                } else {
+                    alert(data.detail || 'Registration failed');
+                }
+            } catch (err) {
+                alert('Connection error');
+            }
+        };
+
+        async function showApp() {
+            authModal.classList.add('hidden');
+            appContent.classList.remove('hidden');
+            streakContainer.classList.remove('hidden');
+            logoutBtn.classList.remove('hidden');
+            token = localStorage.getItem('token');
+            loadTask();
+            loadStats();
+        }
+
+        async function loadTask() {
+            const res = await fetch('/task/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const task = await res.json();
+            document.getElementById('taskEn').innerText = task.task_en;
+            document.getElementById('hiTask').innerText = task.task_hi;
+            document.getElementById('taskDate').innerText = task.date;
+        }
+
+        async function loadStats() {
+            const res = await fetch('/progress/stats', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const stats = await res.json();
+            document.getElementById('streakCount').innerText = stats.streak;
+        }
+
+        // Audio Recording Logic
+        const recordBtn = document.getElementById('recordBtn');
+        const statusText = document.getElementById('statusText');
+
+        recordBtn.onclick = async () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                recordBtn.classList.remove('recording');
+                statusText.innerText = 'Processing your speech...';
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                    submitAudio(audioBlob);
+                };
+
+                mediaRecorder.start();
+                recordBtn.classList.add('recording');
+                statusText.innerText = 'Listening... Click again to finish';
+            } catch (err) {
+                alert('Please allow microphone access to practice.');
+            }
+        };
+
+        async function submitAudio(blob) {
+            const formData = new FormData();
+            formData.append('file', blob, 'recording.mp3');
+
+            try {
+                const res = await fetch('/submit/audio', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const result = await res.json();
+                showFeedback(result);
+            } catch (err) {
+                statusText.innerText = 'Error submitting. Try again.';
+            }
+        }
+
+        function showFeedback(result) {
+            document.getElementById('feedbackSection').style.display = 'block';
+            document.getElementById('score').innerText = result.score;
+            document.getElementById('correctedText').innerText = result.corrected;
+            document.getElementById('hindiExp').innerText = result.hindi;
+            document.getElementById('encouragement').innerText = result.feedback;
+            document.getElementById('streakCount').innerText = result.streak;
+            statusText.innerText = 'Great job! Listen to the correct version below.';
+            
+            document.getElementById('playBtn').onclick = () => {
+                const utterance = new SpeechSynthesisUtterance(result.corrected);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                speechSynthesis.speak(utterance);
+            };
+        }
+    </script>
+</body>
+</html>
