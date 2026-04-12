@@ -40,7 +40,7 @@ async def register(user_in: UserCreate):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_password = get_password_hash(user_in.password)
-    user_dict = user_in.dict()
+    user_dict = user_in.model_dump()
     user_dict.pop("password")
     user_dict["hashed_password"] = hashed_password
     user_dict["streak"] = 0
