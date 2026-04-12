@@ -84,3 +84,17 @@ Before running the full web app, we use `test_audio_processing.py`.
 
 ## ⚡ Deployment Note
 The backend is configured to use **Environment Variables**. When moving to production (e.g., Render), simply add your `GEMINI_API_KEY` and `MONGODB_URL` to the hosting provider's "Secrets" panel.
+
+---
+
+## 📈 Session Log: April 12, 2026
+- **Speech-to-Speech (STS) Upgrade:**
+    - Upgraded AI engine to `gemini-2.5-flash-preview-tts` for native audio output.
+    - Implemented `response_modalities=["TEXT", "AUDIO"]` for true conversational flow.
+    - Updated frontend with base64 audio playback for AI-generated feedback.
+    - Integrated fallback logic to `gemini-1.5-flash` for high reliability.
+- **Authentication & Security:**
+    - Switched default hashing to **PBKDF2-SHA256** to resolve Windows/Python binary library conflicts with `bcrypt`.
+    - Created a dedicated `UserLogin` schema to simplify the auth flow and match frontend data structures.
+- **MongoDB Atlas Integration:** Switched from local MongoDB to cloud-hosted Atlas with full IP whitelisting support.
+- **IDE Support:** Configured `.vscode/settings.json` for proper module discovery.

@@ -53,6 +53,7 @@
             font-weight: 800;
             background: linear-gradient(to right, var(--primary), var(--secondary));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -558,6 +559,18 @@
             }
         }
 
+        function playAudio(base64Data, text) {
+            if (base64Data) {
+                const audio = new Audio(`data:audio/wav;base64,${base64Data}`);
+                audio.play();
+            } else {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                speechSynthesis.speak(utterance);
+            }
+        }
+
         function showFeedback(result) {
             document.getElementById('feedbackSection').style.display = 'block';
             document.getElementById('score').innerText = result.score;
@@ -565,13 +578,13 @@
             document.getElementById('hindiExp').innerText = result.hindi;
             document.getElementById('encouragement').innerText = result.feedback;
             document.getElementById('streakCount').innerText = result.streak;
-            statusText.innerText = 'Great job! Listen to the correct version below.';
+            statusText.innerText = 'Great job! Listen to the AI feedback below.';
             
+            // Auto-play the native voice if available
+            playAudio(result.audio_data, result.corrected);
+
             document.getElementById('playBtn').onclick = () => {
-                const utterance = new SpeechSynthesisUtterance(result.corrected);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.9;
-                speechSynthesis.speak(utterance);
+                playAudio(result.audio_data, result.corrected);
             };
         }
     </script>

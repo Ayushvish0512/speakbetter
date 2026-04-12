@@ -35,6 +35,10 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
 class UserInDB(UserBase, MongoBaseModel):
     hashed_password: str
     streak: int = 0

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.database import get_database
-from app.models.schemas import UserCreate, UserInDB, Token, TokenData, UserPublic
+from app.models.schemas import UserCreate, UserLogin, UserInDB, Token, TokenData, UserPublic
 from app.core.config import settings
 from datetime import datetime
 import motor.motor_asyncio
@@ -53,7 +53,7 @@ async def register(user_in: UserCreate):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
-async def login(user_in: UserCreate): # Simplified for MVP, usually OAuth2PasswordRequestForm
+async def login(user_in: UserLogin):
     db = get_database()
     user = await db["users"].find_one({"email": user_in.email})
     if not user or not verify_password(user_in.password, user["hashed_password"]):

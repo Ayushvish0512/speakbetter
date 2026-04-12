@@ -14,37 +14,47 @@ if not api_key or api_key == "your_gemini_api_key_here":
     exit(1)
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-flash-latest')
+model = genai.GenerativeModel('gemini-2.5-flash-preview-tts')
 
 audio_path = r"C:\Users\Admin\Downloads\9773796763_7005737079_20251120_171342.mp3"
 
 def test_audio():
-    if not os.path.exists(audio_path):
-        print(f"Error: File not found at {audio_path}")
-        return
-
     print(f"Uploading {audio_path}...")
     audio_file = genai.upload_file(path=audio_path)
     
     prompt = """
-    Analyze this audio recording of a person speaking English.
-    Transcribe the audio and then provide correction and feedback for a Hindi-speaking beginner.
-    Return strictly valid JSON only:
-    {
-      "transcription": "...",
-      "corrected": "...",
-      "hindi": "...",
-      "feedback": "...",
-      "score": 0-10
-    }
+    You are a supportive English coach. 
+    1. Listen to the user's audio.
+    2. Provide a correction and encouragement.
+    3. Return a JSON object with:
+       {
+         "transcription": "...",
+         "corrected": "...",
+         "hindi": "...",
+         "feedback": "...",
+         "score": 1-10
+       }
+    4. Also generate a natural SPOKEN response to be returned as audio.
     """
     
-    print("Generating content...")
-    response = model.generate_content([prompt, audio_file])
+    print("Generating Native Speech content...")
+    response = model.generate_content(
+        [prompt, audio_file],
+        generation_config={"response_modalities": ["text", "audio"]}
+    )
     
+    # Save text response
     with open("result.json", "w", encoding="utf-8") as f:
-        f.write(response.text)
-    print("Result saved to result.json")
+        f.write(response.candidates[0].content.parts[0].text)
+    
+    # Save audio response if present
+    for part in response.candidates[0].content.parts:
+        if hasattr(part, 'inline_data'):
+            with open("response_audio.wav", "wb") as f:
+                f.write(part.inline_data.data)
+            print("Native AI Speech saved to response_audio.wav")
+            
+    print("Text result saved to result.json")
 
 if __name__ == "__main__":
     test_audio()
