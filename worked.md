@@ -8,15 +8,12 @@ This document provides a comprehensive breakdown of the **SpeakBetter** system, 
 Unlike traditional apps that convert Speech-to-Text (STT) and then process it, SpeakBetter is designed around a **multi-modal AI pipeline**.
 
 ### The Pipeline:
-1.  **Capture (Frontend):** The user's voice is captured as an raw audio stream and encoded into an MP3 file.
-2.  **Upload (Backend):** The binary audio file is sent to the FastAPI server.
-3.  **Analysis (Gemini AI):** The audio is fed *directly* into Gemini. Gemini doesn't just "read" text; it "listens" to the audio to understand tone, hesitation, and intent.
-4.  **Transformation:** Gemini generates a structured response:
-    -   **Transcription:** What was said.
-    -   **Correction:** The grammatically perfect version.
-    -   **Hindi Explanation:** Contextual translation.
-    -   **Feedback:** Pedagogical advice.
-5.  **Output (TTS):** The corrected text is played back to the user using high-quality synthesized speech, completing the **Speech-to-Speech** loop.
+1.  **Capture (Frontend):** The user's voice is captured as an raw audio stream and encoded into an **WebM/MP3** file.
+2.  **Upload (Backend):** The binary audio file is sent to the FastAPI server and temporarily stored.
+3.  **Phase 1: Analysis (Gemini 2.5 Flash):** The audio is uploaded to the Gemini File API. The system polls for the `ACTIVE` state and then requests a multimodal analysis. Gemini returns a **JSON object** with the transcription, corrections, and pedagogical feedback.
+4.  **Phase 2: Native Speech (Gemini 2.5 TTS):** The feedback from Phase 1 is fed into the **Gemini 2.5 Flash Preview TTS** model using high-end prompting techniques (Audio Profiles, Director's Notes).
+5.  **Reconstruction:** The backend wraps the raw PCM audio from Gemini into a **WAV container** (24kHz, 16-bit, Mono).
+6.  **Delivery:** The frontend receives the JSON analysis and the base64-encoded WAV file, providing an integrated **Speech-to-Speech** experience.
 
 ---
 
@@ -28,9 +25,9 @@ Unlike traditional apps that convert Speech-to-Text (STT) and then process it, S
 | `app/main.py` | The orchestrator. Mounts the UI, handles CORS, and includes all sub-routers. | `FastAPI`, `StaticFiles` |
 | `app/core/config.py` | Centralized settings. Uses `pydantic-settings` to validate `.env` variables at startup. | `.env`, `Pydantic` |
 | `app/core/database.py` | Async MongoDB client. Singleton pattern used via `db_instance`. | `Motor` |
-| `app/core/security.py` | Cryptography module. Handles BCrypt hashing and JWT token generation/signing. | `passlib`, `python-jose` |
+| `app/core/security.py` | Cryptography module. Handles PBKDF2 hashing and JWT token generation/signing. | `passlib`, `python-jose` |
 | `app/models/schemas.py` | Data blueprints. Defines how Users, Sessions, and Tasks look in JSON. | `Pydantic`, `BSON` |
-| `app/services/gemini_service.py` | The AI interface. Manages the connection to Google's generative models. | `google-generativeai` |
+| `app/services/gemini_service.py` | The AI interface. Manages the **google-genai** Client and two-stage pipeline. | `google-genai` |
 | `app/routes/auth.py` | Identity management. Register/Login logic. | `core/security`, `models/schemas` |
 | `app/routes/submit.py` | The processing hub. Receives audio, triggers Gemini, and saves results. | `services/gemini_service`, `core/database` |
 | `app/routes/task.py` | The curriculum manager. Generates daily challenges using AI. | `services/gemini_service` |
@@ -88,13 +85,21 @@ The backend is configured to use **Environment Variables**. When moving to produ
 ---
 
 ## 📈 Session Log: April 12, 2026
-- **Speech-to-Speech (STS) Upgrade:**
+- **Next-Gen AI Upgrade:**
+    - Integrated **Gemini 3 Flash Preview** (`models/gemini-3-flash-preview`) for state-of-the-art Speech-to-Speech performance.
+    - Implemented multi-modal `response_modalities=["TEXT", "AUDIO"]` to leverage Gemini 3's native dialogue capabilities.
+- **Speech-to-Speech (STS) Flow:**
     - Upgraded AI engine to `gemini-2.5-flash-preview-tts` for native audio output.
     - Implemented `response_modalities=["TEXT", "AUDIO"]` for true conversational flow.
     - Updated frontend with base64 audio playback for AI-generated feedback.
     - Integrated fallback logic to `gemini-1.5-flash` for high reliability.
-- **Authentication & Security:**
-    - Switched default hashing to **PBKDF2-SHA256** to resolve Windows/Python binary library conflicts with `bcrypt`.
-    - Created a dedicated `UserLogin` schema to simplify the auth flow and match frontend data structures.
-- **MongoDB Atlas Integration:** Switched from local MongoDB to cloud-hosted Atlas with full IP whitelisting support.
-- **IDE Support:** Configured `.vscode/settings.json` for proper module discovery.
+- **Next-Gen AI Upgrade (Native STS Fix):**
+    - **SDK Migration**: Fully migrated to **`google-genai`** SDK (v1.72+) for future-proof integration.
+    - Fixed **TypeError** in `Files.upload()` by using the correct `file=` argument instead of `path=`.
+    - Implemented a **Two-Stage Pipeline**: 
+        1. **Analysis**: `gemini-2.5-flash` for transcription and feedback JSON.
+        2. **Native speech**: `gemini-2.5-flash-preview-tts` for high-fidelity audio.
+    - Added **File State Polling**: Wait loop ensuring `ACTIVE` state before requests.
+    - Added **WAV Header Injection**: Wrapped raw PCM data into a valid WAV container for instant playback.
+    - Simplified Login Payload: Resolved 422 errors.
+    - UI Polish: Added version v2.0 tag, loading states, and error traceability.

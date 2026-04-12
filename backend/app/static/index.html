@@ -161,6 +161,28 @@
         .status-text {
             color: var(--text-dim);
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-loading {
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--primary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .record-btn.processing {
+            opacity: 0.7;
+            cursor: wait;
+            background: var(--text-dim);
         }
 
         .feedback-section {
@@ -298,7 +320,7 @@
 </head>
 <body>
     <header>
-        <div class="logo">SpeakBetter</div>
+        <div class="logo">SpeakBetter <span style="font-size: 0.7rem; vertical-align: middle; opacity: 0.5;">v2.0 - Gemini Native</span></div>
         <div class="user-nav">
             <div id="streakContainer" class="streak-badge hidden">
                 🔥 <span id="streakCount">0</span> Days
@@ -421,17 +443,17 @@
                 const res = await fetch('/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, name: '' }) // name dummy for simplicity
+                    body: JSON.stringify({ email, password })
                 });
                 const data = await res.json();
                 if (data.access_token) {
                     localStorage.setItem('token', data.access_token);
                     showApp();
                 } else {
-                    alert(data.detail || 'Login failed');
+                    alert(data.detail || 'Login failed. Please check your email and password.');
                 }
             } catch (err) {
-                alert('Connection error');
+                alert('Connection error. Is the server running?');
             }
         };
 
@@ -516,7 +538,8 @@
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 mediaRecorder.stop();
                 recordBtn.classList.remove('recording');
-                statusText.innerText = 'Processing your speech...';
+                statusText.innerHTML = '<span class="status-loading"></span> Analyzing your speech...';
+                recordBtn.classList.add('processing');
                 return;
             }
 
@@ -530,21 +553,21 @@
                 };
 
                 mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     submitAudio(audioBlob);
                 };
 
                 mediaRecorder.start();
                 recordBtn.classList.add('recording');
-                statusText.innerText = 'Listening... Click again to finish';
+                statusText.innerText = 'Listening... Click again when finished';
             } catch (err) {
-                alert('Please allow microphone access to practice.');
+                alert('Microphone access denied. Please enable it in browser settings.');
             }
         };
 
         async function submitAudio(blob) {
             const formData = new FormData();
-            formData.append('file', blob, 'recording.mp3');
+            formData.append('file', blob, 'recording.webm');
 
             try {
                 const res = await fetch('/submit/audio', {
@@ -552,33 +575,52 @@
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
+                
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.detail || 'Server error');
+                }
+                
                 const result = await res.json();
                 showFeedback(result);
             } catch (err) {
-                statusText.innerText = 'Error submitting. Try again.';
+                statusText.innerText = 'Technical error: ' + err.message;
+                recordBtn.classList.remove('processing');
             }
         }
 
         function playAudio(base64Data, text) {
             if (base64Data) {
-                const audio = new Audio(`data:audio/wav;base64,${base64Data}`);
-                audio.play();
+                try {
+                    const audio = new Audio(`data:audio/wav;base64,${base64Data}`);
+                    audio.play().catch(e => {
+                        console.warn('Native playback failed, using fallback TTS', e);
+                        fallbackTTS(text);
+                    });
+                } catch (e) {
+                    fallbackTTS(text);
+                }
             } else {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.9;
-                speechSynthesis.speak(utterance);
+                fallbackTTS(text);
             }
         }
 
+        function fallbackTTS(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            speechSynthesis.speak(utterance);
+        }
+
         function showFeedback(result) {
+            recordBtn.classList.remove('processing');
             document.getElementById('feedbackSection').style.display = 'block';
             document.getElementById('score').innerText = result.score;
             document.getElementById('correctedText').innerText = result.corrected;
             document.getElementById('hindiExp').innerText = result.hindi;
             document.getElementById('encouragement').innerText = result.feedback;
             document.getElementById('streakCount').innerText = result.streak;
-            statusText.innerText = 'Great job! Listen to the AI feedback below.';
+            statusText.innerText = 'Analysis complete! Tap "Listen" to hear the AI coach.';
             
             // Auto-play the native voice if available
             playAudio(result.audio_data, result.corrected);

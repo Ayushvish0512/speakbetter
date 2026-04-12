@@ -1,74 +1,170 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from app.core.config import settings
 import json
+import base64
+import io
+import wave
+import asyncio
 
 class GeminiService:
     def __init__(self):
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel('models/gemini-3-flash-preview')
+        # Using the new Google GenAI SDK
+        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        # Models
+        self.analysis_model = "gemini-2.5-flash"
+        self.tts_model = "gemini-2.5-flash-preview-tts"
 
     async def analyze_audio(self, audio_path: str):
-        # Upload the file to Gemini
-        audio_file = genai.upload_file(path=audio_path)
-        
-        # System instructions to return both JSON data and Spoken Feedback
-        prompt = """
-        You are a supportive English coach. 
-        1. Listen to the user's audio.
-        2. Provide a correction and encouragement.
-        3. Return a JSON object with:
-           {
-             "transcription": "...",
-             "corrected": "...",
-             "hindi": "...",
-             "feedback": "...",
-             "score": 1-10
-           }
-        4. Also generate a natural SPOKEN response to be returned as audio.
-        """
-        
-        # Requesting both text (for JSON) and audio (for native speech)
         try:
-            response = self.model.generate_content(
-                [prompt, audio_file],
-                generation_config={"response_modalities": ["TEXT", "AUDIO"]}
+            print(f"DEBUG: Starting analyze_audio for {audio_path}")
+            # 1. Upload audio file to Gemini
+            # Corrected argument: 'file' instead of 'path'
+            audio_file = self.client.files.upload(
+                file=audio_path, 
+                config=types.UploadFileConfig(mime_type='audio/webm')
             )
-        except Exception as e:
-            print(f"Gemini Native Audio Error: {e}. Falling back to Text-only.")
-            # Fallback to standard model
-            fallback_model = genai.GenerativeModel('models/gemini-1.5-flash')
-            response = fallback_model.generate_content([prompt, audio_file])
-        
-        try:
-            # Extract JSON data and Audio data
-            text_part = ""
-            audio_base64 = None
-            
-            for part in response.candidates[0].content.parts:
-                # Check for text (many ways text can be returned)
-                if hasattr(part, 'text') and part.text:
-                    text_part += part.text
-                # Check for native speech audio data
-                if hasattr(part, 'inline_data') and part.inline_data:
-                    import base64
-                    audio_base64 = base64.b64encode(part.inline_data.data).decode('utf-8')
+            print(f"DEBUG: Uploaded file {audio_file.name}, state={audio_file.state}")
 
-            if text_part.startswith("```json"): text_part = text_part[7:-3].strip()
-            elif text_part.startswith("```"): text_part = text_part[3:-3].strip()
+            # Wait for file to become active
+            import time
+            start_time = time.time()
+            while audio_file.state.name == "PROCESSING":
+                if time.time() - start_time > 30:
+                    raise Exception("File processing timed out")
+                await asyncio.sleep(1)
+                audio_file = self.client.files.get(name=audio_file.name)
             
-            result = json.loads(text_part)
-            if audio_base64:
-                result["audio_data"] = audio_base64 # Attach native speech
+            if audio_file.state.name == "FAILED":
+                raise Exception(f"Audio processing failed: {audio_file.error}")
             
-            return result
+            print(f"DEBUG: File is ACTIVE. Uri: {audio_file.uri}")
+
+            # 2. Stage One: Multimodal Analysis
+            analysis_prompt = """
+            Analyze this student's English speaking audio.
+            Return a JSON object with EXACTLY these keys:
+            {
+              "transcription": "What they said",
+              "corrected": "The perfect natural English version",
+              "hindi": "A short explanation in Hindi of the correction",
+              "feedback": "A very short encouraging sentence for the student",
+              "score": 1-10
+            }
+            """
+            
+            analysis_response = self.client.models.generate_content(
+                model=self.analysis_model,
+                contents=[
+                    types.Content(
+                        parts=[
+                            types.Part(text=analysis_prompt),
+                            types.Part(file_data=types.FileData(file_uri=audio_file.uri, mime_type=audio_file.mime_type))
+                        ]
+                    )
+                ],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.1 # Low temperature for consistent JSON
+                )
+            )
+            
+            if not analysis_response.text:
+                raise Exception("Empty response from analysis model")
+
+            print(f"DEBUG: Analysis response: {analysis_response.text[:100]}...")
+            
+            # Robust JSON parsing
+            try:
+                # Remove any markdown junk if present
+                raw_json = analysis_response.text
+                if "```json" in raw_json:
+                    raw_json = raw_json.split("```json")[1].split("```")[0].strip()
+                elif "```" in raw_json:
+                    raw_json = raw_json.split("```")[1].split("```")[0].strip()
+                analysis_data = json.loads(raw_json)
+            except Exception as jse:
+                print(f"DEBUG: JSON parse error: {jse}. Raw: {analysis_response.text}")
+                # Try simple find if regex fails
+                import re
+                match = re.search(r'\{.*\}', analysis_response.text, re.DOTALL)
+                if match:
+                    analysis_data = json.loads(match.group())
+                else:
+                    raise jse
+
+            # 3. Stage Two: High-Quality Native TTS Response
+            tts_prompt = f"""
+            # AUDIO PROFILE: Kore
+            ## THE SCENE: A supportive English tutoring session.
+            ### DIRECTOR'S NOTES: Supportive, clear, and encouraging vocal smile.
+            #### TRANSCRIPT:
+            {analysis_data['feedback']} Your corrected sentence is: {analysis_data['corrected']}
+            """
+
+            audio_base64 = None
+            try:
+                # Adding a small retry for intermittent 500 errors from preview models
+                for attempt in range(2):
+                    try:
+                        tts_response = self.client.models.generate_content(
+                            model=self.tts_model,
+                            contents=tts_prompt,
+                            config=types.GenerateContentConfig(
+                                response_modalities=["AUDIO"],
+                                speech_config=types.SpeechConfig(
+                                    voice_config=types.VoiceConfig(
+                                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                            voice_name='Kore'
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                        
+                        if tts_response.candidates and tts_response.candidates[0].content.parts:
+                            part = tts_response.candidates[0].content.parts[0]
+                            if part.inline_data:
+                                pcm_data = part.inline_data.data
+                                print(f"DEBUG: Generated TTS audio of size {len(pcm_data)}")
+                                
+                                # Convert raw PCM to WAV
+                                with io.BytesIO() as wav_io:
+                                    with wave.open(wav_io, 'wb') as wf:
+                                        wf.setnchannels(1)
+                                        wf.setsampwidth(2)
+                                        wf.setframerate(24000)
+                                        wf.writeframes(pcm_data)
+                                    wav_bytes = wav_io.getvalue()
+                                
+                                audio_base64 = base64.b64encode(wav_bytes).decode('utf-8')
+                        break # Success
+                    except Exception as e:
+                        if attempt == 0:
+                            print(f"DEBUG: TTS Attempt 1 failed, retrying... Error: {e}")
+                            await asyncio.sleep(1)
+                        else:
+                            raise e
+
+            except Exception as tts_e:
+                print(f"DEBUG: Stage 2 (TTS) failed entirely: {tts_e}. Falling back to browser TTS.")
+                # We don't raise here, we just continue with audio_base64 as None
+
+            analysis_data['audio_data'] = audio_base64
+            print(f"DEBUG: Analysis processed (TTS Success: {audio_base64 is not None})")
+            return analysis_data
+
         except Exception as e:
-            print(f"Error parsing Gemini response: {e}")
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Gemini GenAI Error:\n{error_details}")
             return {
-                "transcription": "Unknown",
-                "corrected": "Unknown",
-                "hindi": "क्षमा करें, तकनीकी त्रुटि।",
-                "feedback": "Keep practicing!",
-                "score": 5
+                "transcription": "Error processing audio",
+                "corrected": "Technical error occurred",
+                "hindi": "त्रुटि। कृपया बाद में प्रयास करें।",
+                "feedback": f"Details: {str(e)[:100]}",
+                "score": 0,
+                "audio_data": None
             }
 
 gemini_service = GeminiService()

@@ -8,6 +8,7 @@ passlib[bcrypt]
 bcrypt
 python-dotenv
 google-generativeai
+google-genai
 slowapi
 python-multipart
 dnspython
