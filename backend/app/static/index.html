@@ -3,439 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpeakBetter - AI English Tutor</title>
+    <title>SpeakBetter - Master English with AI</title>
+    <meta name="description" content="SpeakBetter uses Gemini AI to help you master English through daily speaking practice and instant feedback.">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #ec4899;
-            --bg-dark: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            min-height: 100vh;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%);
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        header {
-            padding: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--glass-border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .user-nav {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .streak-badge {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            border: 1px solid var(--glass-border);
-        }
-
-        main {
-            flex: 1;
-            padding: 2rem;
-            max-width: 800px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        .task-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 2rem;
-            padding: 3rem;
-            border: 1px solid var(--glass-border);
-            text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            margin-bottom: 2rem;
-            transform: translateY(0);
-            transition: transform 0.3s ease;
-        }
-
-        .task-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .day-label {
-            color: var(--secondary);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-        h2 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            line-height: 1.2;
-        }
-
-        .hi-task {
-            font-size: 1.25rem;
-            color: var(--text-dim);
-            margin-bottom: 2rem;
-        }
-
-        .controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2rem;
-        }
-
-        .record-btn {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: var(--primary);
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-        }
-
-        .record-btn.recording {
-            background: var(--secondary);
-            animation: pulse 1.5s infinite;
-        }
-
-        .record-btn svg {
-            width: 40px;
-            height: 40px;
-            fill: white;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(236, 72, 153, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
-        }
-
-        .status-text {
-            color: var(--text-dim);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .status-loading {
-            width: 12px;
-            height: 12px;
-            border: 2px solid var(--primary);
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .record-btn.processing {
-            opacity: 0.7;
-            cursor: wait;
-            background: var(--text-dim);
-        }
-
-        .feedback-section {
-            display: none;
-            animation: slideUp 0.5s ease;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .feedback-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 1.5rem;
-            padding: 2rem;
-            margin-top: 2rem;
-            text-align: left;
-        }
-
-        .score-box {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: var(--primary);
-            border-radius: 1rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-        }
-
-        .corrected-text {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: #4ade80;
-        }
-
-        .hindi-exp {
-            color: var(--text-dim);
-            font-style: italic;
-            border-left: 3px solid var(--secondary);
-            padding-left: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .btn-play {
-            padding: 0.75rem 1.5rem;
-            background: white;
-            color: var(--bg-dark);
-            border: none;
-            border-radius: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s;
-        }
-
-        .btn-play:hover {
-            transform: scale(1.05);
-            background: #f1f5f9;
-        }
-
-        /* Modal Styles */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 1rem;
-        }
-
-        .modal-content {
-            background: var(--bg-dark);
-            border: 1px solid var(--glass-border);
-            padding: 3rem;
-            border-radius: 2rem;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 1);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-dim);
-        }
-
-        input {
-            width: 100%;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 0.75rem;
-            color: white;
-            font-size: 1rem;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 1rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 0.75rem;
-            font-weight: 700;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-submit:hover {
-            background: var(--primary-dark);
-        }
-
-        .hidden {
-            display: none !important;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/index.css">
 </head>
 <body>
-    <header>
-        <div class="logo">SpeakBetter <span style="font-size: 0.7rem; vertical-align: middle; opacity: 0.5;">v2.0 - Gemini Native</span></div>
-        <div class="user-nav">
-            <div id="streakContainer" class="streak-badge hidden">
-                🔥 <span id="streakCount">0</span> Days
-            </div>
-            <button id="logoutBtn" class="btn-play hidden" style="padding:0.4rem 1rem">Logout</button>
-        </div>
-    </header>
 
-    <main id="appContent" class="hidden">
-        <div class="task-card">
-            <span class="day-label" id="taskDate">Today's Task</span>
-            <h2 id="taskEn">Loading task...</h2>
-            <p id="hiTask" class="hi-task"></p>
-            
-            <div class="controls">
-                <button id="recordBtn" class="record-btn">
-                    <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-                </button>
-                <div id="statusText" class="status-text">Click the mic and start speaking</div>
-            </div>
-
-            <div id="feedbackSection" class="feedback-section">
-                <div class="feedback-card">
-                    <div class="score-box">Score: <span id="score">0</span>/10</div>
-                    <div class="corrected-text" id="correctedText"></div>
-                    <div class="hindi-exp" id="hindiExp"></div>
-                    <div id="encouragement" style="margin-bottom: 1.5rem; color: var(--text-dim)"></div>
-                    <button id="playBtn" class="btn-play">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        Listen & Practice
-                    </button>
-                </div>
-            </div>
-            <div id="historySection" class="feedback-section" style="margin-top: 3rem;">
-                <h3 style="margin-bottom: 1.5rem; color: var(--secondary)">Your Last 5 Attempts</h3>
-                <div id="historyList"></div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Auth Modal -->
-    <div id="authModal" class="modal">
-        <div class="modal-content">
-            <h2 style="font-size: 1.5rem; margin-bottom: 2rem;">Welcome to SpeakBetter</h2>
+    <!-- Landing View -->
+    <div id="landingView" class="hero-section">
+        <h1 class="hero-title">Master English with AI</h1>
+        <p class="hero-subtitle">Experience the future of language learning. Speak naturally, get instant corrections, and track your mastery with Gemini-powered feedback.</p>
+        
+        <div class="auth-container glass" id="authContainer">
             <div id="loginForm">
+                <h2 style="margin-bottom: 2rem;">Welcome Back</h2>
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="loginEmail" placeholder="ravi@example.com">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com">
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
+                    <label for="loginPassword">Password</label>
                     <input type="password" id="loginPassword" placeholder="••••••••">
                 </div>
-                <button class="btn-submit" id="handleLogin">Get Started</button>
-                <p style="margin-top: 1rem; text-align: center; font-size: 0.9rem; color: var(--text-dim)">
-                    Don't have an account? <a href="#" id="showRegister" style="color: var(--primary)">Register</a>
+                <button class="btn-primary" id="loginBtn">Start Practicing</button>
+                <p style="margin-top: 1.5rem; color: var(--text-dim); font-size: 0.9rem;">
+                    New here? <a href="#" id="showRegister" style="color: var(--primary); text-decoration: none; font-weight: 600;">Create an account</a>
                 </p>
             </div>
+
             <div id="registerForm" class="hidden">
+                <h2 style="margin-bottom: 2rem;">Join SpeakBetter</h2>
                 <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" id="regName" placeholder="Ravi Kumar">
+                    <label for="regName">Your Name</label>
+                    <input type="text" id="regName" placeholder="Alex Johnson">
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="regEmail" placeholder="ravi@example.com">
+                    <label for="regEmail">Email Address</label>
+                    <input type="email" id="regEmail" placeholder="your@email.com">
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
+                    <label for="regPassword">Password</label>
                     <input type="password" id="regPassword" placeholder="••••••••">
                 </div>
-                <button class="btn-submit" id="handleRegister">Create Account</button>
-                <p style="margin-top: 1rem; text-align: center; font-size: 0.9rem; color: var(--text-dim)">
-                    Already have an account? <a href="#" id="showLogin" style="color: var(--primary)">Login</a>
+                <button class="btn-primary" id="registerBtn">Create Account</button>
+                <p style="margin-top: 1.5rem; color: var(--text-dim); font-size: 0.9rem;">
+                    Already have an account? <a href="#" id="showLogin" style="color: var(--primary); text-decoration: none; font-weight: 600;">Sign in</a>
                 </p>
             </div>
         </div>
     </div>
 
+    <!-- App View -->
+    <div id="appView" class="hidden">
+        <nav class="navbar glass">
+            <div class="logo">SpeakBetter</div>
+            <div style="display: flex; gap: 1.5rem; align-items: center;">
+                <div id="streakBadge" class="streak-badge">
+                    🔥 <span id="streakCount">0</span> Days
+                </div>
+                <button id="profileBtn" class="glass" style="padding: 0.5rem 1rem; cursor: pointer; color: white;">Profile</button>
+                <button id="logoutBtn" style="background: none; border: none; color: var(--text-dim); cursor: pointer; font-weight: 600;">Logout</button>
+            </div>
+        </nav>
+
+        <div class="app-container">
+            <!-- Daily Task Section -->
+            <div class="task-card glass">
+                <span style="color: var(--secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;" id="taskDateLabel">Today's Topic</span>
+                <h2 id="taskEn" style="font-size: 2.5rem; margin: 1rem 0;">Loading daily challenge...</h2>
+                <p id="taskHi" style="font-size: 1.25rem; color: var(--text-dim); margin-bottom: 2.5rem;"></p>
+                
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem;">
+                    <button id="recordBtn" class="microphone-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                    </button>
+                    <div id="statusText" style="color: var(--text-dim); font-weight: 500;">Tap the mic and start speaking</div>
+                </div>
+
+                <!-- Feedback Section -->
+                <div id="feedbackSection" class="hidden" style="margin-top: 3rem; text-align: left; border-top: 1px solid var(--glass-border); padding-top: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <div style="background: var(--primary); padding: 0.5rem 1.5rem; border-radius: 1rem; font-weight: 800; font-size: 1.2rem;">
+                            Score: <span id="feedbackScore">0</span>/10
+                        </div>
+                        <button id="playBtn" class="btn-primary" style="width: auto; margin: 0; padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            Hear Proper version
+                        </button>
+                    </div>
+                    
+                    <div class="feedback-grid">
+                        <div class="feedback-item glass">
+                            <h4 style="color: var(--success); margin-bottom: 1rem;">Corrected English</h4>
+                            <p id="correctedText" style="font-size: 1.1rem;"></p>
+                        </div>
+                        <div class="feedback-item glass">
+                            <h4 style="color: var(--secondary); margin-bottom: 1rem;">Hindi Meaning</h4>
+                            <p id="hindiExp" style="font-size: 1.1rem;"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass" style="margin-top: 1.5rem; padding: 1.5rem;">
+                        <h4 style="color: var(--primary); margin-bottom: 0.5rem;">Coach Notes</h4>
+                        <p id="coachFeedback" style="color: var(--text-dim);"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile/Update Section (Modal or Inline) -->
+            <div id="profileSection" class="hidden glass" style="padding: 2rem; margin-top: 2rem;">
+                <h3 style="margin-bottom: 1.5rem;">Profile Settings</h3>
+                <div class="form-group">
+                    <label>Update Your Name</label>
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="text" id="updateNameInput" placeholder="New Name">
+                        <button class="btn-primary" id="saveProfileBtn" style="width: auto; margin: 0;">Save</button>
+                    </div>
+                </div>
+                <p id="profileStatus" style="font-size: 0.9rem; margin-top: 0.5rem;"></p>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const API_URL = ''; // Same origin
         let token = localStorage.getItem('token');
         let mediaRecorder;
         let audioChunks = [];
 
-        // UI Elements
-        const authModal = document.getElementById('authModal');
-        const appContent = document.getElementById('appContent');
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        const streakContainer = document.getElementById('streakContainer');
-        const logoutBtn = document.getElementById('logoutBtn');
-
-        // Initialization
-        if (token) {
-            showApp();
+        // UI View Switchers
+        function showApp() {
+            document.getElementById('landingView').classList.add('hidden');
+            document.getElementById('appView').classList.remove('hidden');
+            loadTask();
+            loadStats();
         }
 
-        document.getElementById('showRegister').onclick = () => {
-            loginForm.classList.add('hidden');
-            registerForm.classList.remove('hidden');
+        function showLanding() {
+            document.getElementById('appView').classList.add('hidden');
+            document.getElementById('landingView').classList.remove('hidden');
+        }
+
+        // Initialize
+        if (token) {
+            showApp();
+        } else {
+            showLanding();
+        }
+
+        // Auth Navigation
+        document.getElementById('showRegister').onclick = (e) => {
+            e.preventDefault();
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
         };
 
-        document.getElementById('showLogin').onclick = () => {
-            registerForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
+        document.getElementById('showLogin').onclick = (e) => {
+            e.preventDefault();
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
         };
 
-        logoutBtn.onclick = () => {
-            localStorage.removeItem('token');
-            location.reload();
-        };
-
-        // Auth Logic
-        document.getElementById('handleLogin').onclick = async () => {
+        // Login Logic
+        document.getElementById('loginBtn').onclick = async () => {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
@@ -448,16 +178,18 @@
                 const data = await res.json();
                 if (data.access_token) {
                     localStorage.setItem('token', data.access_token);
+                    token = data.access_token;
                     showApp();
                 } else {
-                    alert(data.detail || 'Login failed. Please check your email and password.');
+                    alert(data.detail || 'Login failed');
                 }
             } catch (err) {
-                alert('Connection error. Is the server running?');
+                alert('Server connection error');
             }
         };
 
-        document.getElementById('handleRegister').onclick = async () => {
+        // Register Logic
+        document.getElementById('registerBtn').onclick = async () => {
             const name = document.getElementById('regName').value;
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPassword').value;
@@ -471,66 +203,78 @@
                 const data = await res.json();
                 if (data.access_token) {
                     localStorage.setItem('token', data.access_token);
+                    token = data.access_token;
                     showApp();
                 } else {
                     alert(data.detail || 'Registration failed');
                 }
             } catch (err) {
-                alert('Connection error');
+                alert('Server connection error');
             }
         };
 
-        async function showApp() {
-            authModal.classList.add('hidden');
-            appContent.classList.remove('hidden');
-            streakContainer.classList.remove('hidden');
-            logoutBtn.classList.remove('hidden');
-            token = localStorage.getItem('token');
-            loadTask();
-            loadStats();
-            loadHistory();
-        }
+        // Logout
+        document.getElementById('logoutBtn').onclick = () => {
+            localStorage.removeItem('token');
+            location.reload();
+        };
 
+        // App Logic
         async function loadTask() {
-            const res = await fetch('/task/', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const task = await res.json();
-            document.getElementById('taskEn').innerText = task.task_en;
-            document.getElementById('hiTask').innerText = task.task_hi;
-            document.getElementById('taskDate').innerText = task.date;
+            try {
+                const res = await fetch('/task/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const task = await res.json();
+                document.getElementById('taskEn').innerText = task.task_en;
+                document.getElementById('taskHi').innerText = task.task_hi;
+                document.getElementById('taskDateLabel').innerText = `Challenge for ${task.date}`;
+            } catch (err) {
+                console.error('Failed to load task', err);
+            }
         }
 
         async function loadStats() {
-            const res = await fetch('/progress/stats', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const stats = await res.json();
-            document.getElementById('streakCount').innerText = stats.streak;
+            try {
+                const res = await fetch('/progress/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const stats = await res.json();
+                document.getElementById('streakCount').innerText = stats.streak;
+            } catch (err) {
+                console.error('Failed to load stats', err);
+            }
         }
 
-        async function loadHistory() {
-            const res = await fetch('/progress/history', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const history = await res.json();
-            const list = document.getElementById('historyList');
-            list.innerHTML = '';
-            
-            history.slice(0, 5).forEach(session => {
-                const item = document.createElement('div');
-                item.className = 'feedback-card';
-                item.style.marginBottom = '1rem';
-                item.innerHTML = `
-                    <div style="font-size: 0.8rem; color: var(--text-dim)">${new Date(session.date).toLocaleDateString()}</div>
-                    <div style="font-weight: 600; margin: 0.5rem 0">"${session.user_input}"</div>
-                    <div style="color: #4ade80">→ ${session.corrected_text}</div>
-                `;
-                list.appendChild(item);
-            });
-        }
+        // Profile Update
+        document.getElementById('profileBtn').onclick = () => {
+            document.getElementById('profileSection').classList.toggle('hidden');
+        };
 
-        // Audio Recording Logic
+        document.getElementById('saveProfileBtn').onclick = async () => {
+            const newName = document.getElementById('updateNameInput').value;
+            if (!newName) return;
+
+            try {
+                const res = await fetch('/auth/me', {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: newName })
+                });
+                const data = await res.json();
+                document.getElementById('profileStatus').innerText = "Profile updated successfully!";
+                document.getElementById('profileStatus').style.color = "var(--success)";
+                setTimeout(() => { document.getElementById('profileStatus').innerText = ""; }, 3000);
+            } catch (err) {
+                document.getElementById('profileStatus').innerText = "Failed to update profile";
+                document.getElementById('profileStatus').style.color = "var(--secondary)";
+            }
+        };
+
+        // Audio Recording
         const recordBtn = document.getElementById('recordBtn');
         const statusText = document.getElementById('statusText');
 
@@ -538,8 +282,7 @@
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 mediaRecorder.stop();
                 recordBtn.classList.remove('recording');
-                statusText.innerHTML = '<span class="status-loading"></span> Analyzing your speech...';
-                recordBtn.classList.add('processing');
+                statusText.innerText = 'Analyzing your speech...';
                 return;
             }
 
@@ -548,10 +291,7 @@
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
 
-                mediaRecorder.ondataavailable = (event) => {
-                    audioChunks.push(event.data);
-                };
-
+                mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     submitAudio(audioBlob);
@@ -559,9 +299,9 @@
 
                 mediaRecorder.start();
                 recordBtn.classList.add('recording');
-                statusText.innerText = 'Listening... Click again when finished';
+                statusText.innerText = 'Listening... Click again to stop';
             } catch (err) {
-                alert('Microphone access denied. Please enable it in browser settings.');
+                alert('Please allow microphone access to practice speaking.');
             }
         };
 
@@ -576,58 +316,29 @@
                     body: formData
                 });
                 
-                if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(errData.detail || 'Server error');
-                }
+                if (!res.ok) throw new Error('Speech analysis failed');
                 
                 const result = await res.json();
                 showFeedback(result);
             } catch (err) {
-                statusText.innerText = 'Technical error: ' + err.message;
-                recordBtn.classList.remove('processing');
+                statusText.innerText = 'Error: ' + err.message;
             }
-        }
-
-        function playAudio(base64Data, text) {
-            if (base64Data) {
-                try {
-                    const audio = new Audio(`data:audio/wav;base64,${base64Data}`);
-                    audio.play().catch(e => {
-                        console.warn('Native playback failed, using fallback TTS', e);
-                        fallbackTTS(text);
-                    });
-                } catch (e) {
-                    fallbackTTS(text);
-                }
-            } else {
-                fallbackTTS(text);
-            }
-        }
-
-        function fallbackTTS(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            utterance.rate = 0.9;
-            speechSynthesis.speak(utterance);
         }
 
         function showFeedback(result) {
-            recordBtn.classList.remove('processing');
-            document.getElementById('feedbackSection').style.display = 'block';
-            document.getElementById('score').innerText = result.score;
+            document.getElementById('feedbackSection').classList.remove('hidden');
+            document.getElementById('feedbackScore').innerText = result.score;
             document.getElementById('correctedText').innerText = result.corrected;
             document.getElementById('hindiExp').innerText = result.hindi;
-            document.getElementById('encouragement').innerText = result.feedback;
+            document.getElementById('coachFeedback').innerText = result.feedback;
             document.getElementById('streakCount').innerText = result.streak;
-            statusText.innerText = 'Analysis complete! Tap "Listen" to hear the AI coach.';
+            statusText.innerText = 'Feedback ready!';
             
-            // Auto-play the native voice if available
-            playAudio(result.audio_data, result.corrected);
-
-            document.getElementById('playBtn').onclick = () => {
-                playAudio(result.audio_data, result.corrected);
-            };
+            if (result.audio_data) {
+                const audio = new Audio(`data:audio/wav;base64,${result.audio_data}`);
+                document.getElementById('playBtn').onclick = () => audio.play();
+                audio.play(); // Auto-play
+            }
         }
     </script>
 </body>

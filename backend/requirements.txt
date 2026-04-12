@@ -6,7 +6,7 @@ pydantic[email]
 python-jose[cryptography]
 pydantic-settings
 passlib[pbkdf2_sha256,bcrypt]
-bcrypt
+bcrypt==3.2.0
 python-dotenv
 google-genai
 slowapi
