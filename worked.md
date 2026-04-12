@@ -103,3 +103,8 @@ The backend is configured to use **Environment Variables**. When moving to produ
     - Added **WAV Header Injection**: Wrapped raw PCM data into a valid WAV container for instant playback.
     - Simplified Login Payload: Resolved 422 errors.
     - UI Polish: Added version v2.0 tag, loading states, and error traceability.
+- **Production & Stability Finalization:**
+    - **Blueprint Infrastructure**: Created `render.yaml` for 1-click "Infrastructure as Code" deployment.
+    - **Hybrid Audio Engine**: Implemented a **Stage-2 Failover** mechanism. If Gemini's native TTS service faces downtime (500 errors), the app automatically falls back to the **Browser Web Speech API**, ensuring uninterrupted user feedback.
+    - **Performance Optimization**: Optimized library dependencies (removed old SDKs) to keep build sizes under 400MB.
+    - **Local-Production Simulation**: Updated `.env` and `Procfile` to allow for identical behavior between local dev and cloud hosting using `gunicorn`.

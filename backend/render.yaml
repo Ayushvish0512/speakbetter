@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: speakbetter-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
+    envVars:
+      - key: DATABASE_NAME
+        value: speakbetter
+      - key: PROJECT_NAME
+        value: SpeakBetter
+      - key: MONGODB_URL
+        sync: false # Set in Render Dashboard for security
+      - key: JWT_SECRET
+        generateValue: true # Generates a random secure key automatically
+      - key: GEMINI_API_KEY
+        sync: false # Set in Render Dashboard for security
