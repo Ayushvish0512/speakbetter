@@ -1,13 +1,13 @@
 fastapi
 uvicorn
+gunicorn
 motor
 pydantic[email]
 python-jose[cryptography]
 pydantic-settings
-passlib[bcrypt]
+passlib[pbkdf2_sha256,bcrypt]
 bcrypt
 python-dotenv
-google-generativeai
 google-genai
 slowapi
 python-multipart
