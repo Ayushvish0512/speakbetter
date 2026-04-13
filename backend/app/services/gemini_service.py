@@ -15,6 +15,31 @@ class GeminiService:
         self.analysis_model = "gemini-2.5-flash"
         self.tts_model = "gemini-2.5-flash-preview-tts"
 
+    async def generate_with_retry(self, model, contents, config=None, max_retries=3):
+        for attempt in range(max_retries):
+            try:
+                # Use a separate thread for the synchronous genai call to avoid blocking
+                loop = asyncio.get_event_loop()
+                response = await loop.run_in_executor(
+                    None, 
+                    lambda: self.client.models.generate_content(
+                        model=model,
+                        contents=contents,
+                        config=config
+                    )
+                )
+                return response
+            except Exception as e:
+                import google.genai.errors as errors
+                is_retryable = isinstance(e, (errors.ServerError, errors.APIError))
+                
+                if is_retryable and attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) + 1
+                    print(f"DEBUG: Gemini API error ({e}). Retrying in {wait_time}s... (Attempt {attempt + 1}/{max_retries})")
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise e
+
     async def analyze_audio(self, audio_path: str):
         try:
             print(f"DEBUG: Starting analyze_audio for {audio_path}")
@@ -59,7 +84,8 @@ class GeminiService:
             }
             """
             
-            analysis_response = self.client.models.generate_content(
+            # Use retry helper for analysis
+            analysis_response = await self.generate_with_retry(
                 model=self.analysis_model,
                 contents=[
                     types.Content(
@@ -110,47 +136,38 @@ class GeminiService:
 
             audio_base64 = None
             try:
-                # Adding a small retry for intermittent 500 errors from preview models
-                for attempt in range(2):
-                    try:
-                        tts_response = self.client.models.generate_content(
-                            model=self.tts_model,
-                            contents=tts_prompt,
-                            config=types.GenerateContentConfig(
-                                response_modalities=["AUDIO"],
-                                speech_config=types.SpeechConfig(
-                                    voice_config=types.VoiceConfig(
-                                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                                            voice_name='Kore'
-                                        )
-                                    )
+                # Use retry helper for TTS
+                tts_response = await self.generate_with_retry(
+                    model=self.tts_model,
+                    contents=tts_prompt,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["AUDIO"],
+                        speech_config=types.SpeechConfig(
+                            voice_config=types.VoiceConfig(
+                                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                    voice_name='Kore'
                                 )
                             )
                         )
+                    )
+                )
+                
+                if tts_response.candidates and tts_response.candidates[0].content.parts:
+                    part = tts_response.candidates[0].content.parts[0]
+                    if part.inline_data:
+                        pcm_data = part.inline_data.data
+                        print(f"DEBUG: Generated TTS audio of size {len(pcm_data)}")
                         
-                        if tts_response.candidates and tts_response.candidates[0].content.parts:
-                            part = tts_response.candidates[0].content.parts[0]
-                            if part.inline_data:
-                                pcm_data = part.inline_data.data
-                                print(f"DEBUG: Generated TTS audio of size {len(pcm_data)}")
-                                
-                                # Convert raw PCM to WAV
-                                with io.BytesIO() as wav_io:
-                                    with wave.open(wav_io, 'wb') as wf:
-                                        wf.setnchannels(1)
-                                        wf.setsampwidth(2)
-                                        wf.setframerate(24000)
-                                        wf.writeframes(pcm_data)
-                                    wav_bytes = wav_io.getvalue()
-                                
-                                audio_base64 = base64.b64encode(wav_bytes).decode('utf-8')
-                        break # Success
-                    except Exception as e:
-                        if attempt == 0:
-                            print(f"DEBUG: TTS Attempt 1 failed, retrying... Error: {e}")
-                            await asyncio.sleep(1)
-                        else:
-                            raise e
+                        # Convert raw PCM to WAV
+                        with io.BytesIO() as wav_io:
+                            with wave.open(wav_io, 'wb') as wf:
+                                wf.setnchannels(1)
+                                wf.setsampwidth(2)
+                                wf.setframerate(24000)
+                                wf.writeframes(pcm_data)
+                            wav_bytes = wav_io.getvalue()
+                        
+                        audio_base64 = base64.b64encode(wav_bytes).decode('utf-8')
 
             except Exception as tts_e:
                 print(f"DEBUG: Stage 2 (TTS) failed entirely: {tts_e}. Falling back to browser TTS.")
@@ -174,3 +191,4 @@ class GeminiService:
             }
 
 gemini_service = GeminiService()
+

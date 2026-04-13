@@ -17,7 +17,6 @@ async def get_daily_task(current_user: dict = Depends(get_current_user)):
     
     if not task:
         # Generate a new task using Gemini (or use a predefined list)
-        # For simplicity, let's use a small predefined list or ask Gemini
         prompt = """
         You are a Language Learning Assistant. Generate a simple daily English speaking challenge for a Hindi speaker.
         The task must be related to daily life, professional skills, or travel.
@@ -25,15 +24,21 @@ async def get_daily_task(current_user: dict = Depends(get_current_user)):
         Return EXACTLY this JSON format (no markdown):
         {"task_en": "Task in English", "task_hi": "Task in Hindi"}
         """
-        response = gemini_service.client.models.generate_content(
-            model=gemini_service.analysis_model,
-            contents=prompt
-        )
+        
         try:
+            response = await gemini_service.generate_with_retry(
+                model=gemini_service.analysis_model,
+                contents=prompt
+            )
             text = response.text.strip()
-            if text.startswith("```json"): text = text[7:-3].strip()
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+            
             task_data = json.loads(text)
-        except:
+        except Exception as e:
+            print(f"DEBUG: Task generation failed ({e}). Using fallback.")
             task_data = {
                 "task_en": "Describe your morning routine.",
                 "task_hi": "अपनी सुबह की दिनचर्या के बारे में बताएं।"
@@ -41,8 +46,8 @@ async def get_daily_task(current_user: dict = Depends(get_current_user)):
         
         task_doc = {
             "date": today_str,
-            "task_en": task_data["task_en"],
-            "task_hi": task_data["task_hi"]
+            "task_en": task_data.get("task_en", "Describe your morning routine."),
+            "task_hi": task_data.get("task_hi", "अपनी सुबह की दिनचर्या के बारे में बताएं।")
         }
         await db["tasks"].insert_one(task_doc)
         task = task_doc

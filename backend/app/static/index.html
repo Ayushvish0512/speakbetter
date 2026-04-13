@@ -338,6 +338,16 @@
                 const audio = new Audio(`data:audio/wav;base64,${result.audio_data}`);
                 document.getElementById('playBtn').onclick = () => audio.play();
                 audio.play(); // Auto-play
+            } else {
+                // Browser TTS Fallback
+                console.log("Gemini TTS unavailable, using browser fallback.");
+                const speech = new SpeechSynthesisUtterance();
+                speech.text = `${result.feedback}. Your corrected sentence is: ${result.corrected}`;
+                speech.lang = 'en-US';
+                speech.rate = 0.9;
+                
+                document.getElementById('playBtn').onclick = () => window.speechSynthesis.speak(speech);
+                window.speechSynthesis.speak(speech); // Auto-play fallback
             }
         }
     </script>
