@@ -5,8 +5,8 @@ This document archives the specific AI output from the initial end-to-end test o
 ---
 
 ## 📁 Source Information
-- **File:** `9773796763_7005737079_20251120_171342.mp3 "Random file from YT`
-- **Topic:** Wellness Workshop Registration (PCOS/Hormones)
+- **File:** `9773796763_7005737079_20251120_171342.mp3 Random workshop registration insta ads file`
+- **Topic:** Wellness Workshop Registration
 - **Learner Level:** Beginner-Intermediate
 
 ---
@@ -14,10 +14,10 @@ This document archives the specific AI output from the initial end-to-end test o
 ## 🤖 AI Feedback Breakdown
 
 ### 1. 📝 Transcription
-> *"Hello, hi. I am calling from Lyca Wellness. ... You have registered with us for upcoming workshop, na? To manage hormones, lifestyle, PCOS... Oh, maybe. I don't remember. Maybe, yeah, I think so. ... Right, thank you."*
+> *"Hello, hi. I am calling from coding. ... You have registered with us for upcoming workshop, na? To manage Data, Cleaning, Loading... Oh, maybe. I don't remember. Maybe, yeah, I think so. ... Right, thank you."*
 
 ### 2. ✨ Corrected Version
-> *"Hello, I am calling from Lyca Wellness. You registered with us for an upcoming workshop on managing hormones, lifestyle, and PCOS, didn't you? ... We have a workshop today at 6:30 PM. I hope you are available to join us."*
+> *"Hello, I am calling from Lyca Coding. You registered with us for an upcoming workshop on managing Data, Cleaning, and Loading, didn't you? ... We have a workshop today at 6:30 PM. I hope you are available to join us."*
 
 ### 3. 🇮🇳 Hindi Explanation
 > नमस्ते, मैं लाइका वेलनेस से बात कर रही हूँ। आपने हमारे आने वाले वर्कशॉप (हार्मोन और PCOS मैनेजमेंट) के लिए रजिस्टर किया था। क्या आपको याद है? / शायद, मुझे ठीक से याद नहीं है, लेकिन शायद हाँ। क्या यह PCOS से संबंधित था? / जी हाँ। आज शाम 6:30 बजे हमारी वर्कशॉप है। क्या आप शामिल हो पाएँगी?
