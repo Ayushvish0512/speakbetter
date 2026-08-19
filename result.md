@@ -5,8 +5,8 @@ This document archives the specific AI output from the initial end-to-end test o
 ---
 
 ## 📁 Source Information
-- **File:** `9773796763_7005737079_20251120_171342.mp3 Random workshop registration insta ads file`
-- **Topic:** Wellness Workshop Registration
+- **File:** `coding_ad_wrkshop.mp3 Random workshop registration insta ads file`
+- **Topic:** coding Workshop Registration
 - **Learner Level:** Beginner-Intermediate
 
 ---
@@ -20,19 +20,21 @@ This document archives the specific AI output from the initial end-to-end test o
 > *"Hello, I am calling from Lyca Coding. You registered with us for an upcoming workshop on managing Data, Cleaning, and Loading, didn't you? ... We have a workshop today at 6:30 PM. I hope you are available to join us."*
 
 ### 3. 🇮🇳 Hindi Explanation
-> नमस्ते, मैं लाइका वेलनेस से बात कर रही हूँ। आपने हमारे आने वाले वर्कशॉप (हार्मोन और PCOS मैनेजमेंट) के लिए रजिस्टर किया था। क्या आपको याद है? / शायद, मुझे ठीक से याद नहीं है, लेकिन शायद हाँ। क्या यह PCOS से संबंधित था? / जी हाँ। आज शाम 6:30 बजे हमारी वर्कशॉप है। क्या आप शामिल हो पाएँगी?
+> नमस्ते, मैं लाइका कोडिंग से बात कर रही हूँ। आपने हमारे आने वाले वर्कशॉप (Data, Cleaning, और Loading को मैनेज करने) के लिए रजिस्टर किया था। क्या आपको याद है? / शायद, मुझे ठीक से याद नहीं है, लेकिन शायद हाँ। क्या यह Data, Cleaning और Loading से संबंधित था? / जी हाँ। आज शाम 6:30 बजे हमारी वर्कशॉप है। मुझे उम्मीद है कि आप इसमें शामिल होने के लिए उपलब्ध होंगे।
 
 ### 4. 💡 Pedagogical Feedback
-- **Indianisms:** Replaced the informal ending "na?" with the proper question tag "didn't you?" or "right?".
-- **Completeness:** Improved the recipient's response from "I'll just listen whatever" to "listen to as much as I can" for a more professional tone.
-- **Clarity:** Added "PM" to the time for clarity and used proper articles ("an upcoming workshop").
+- **Indianisms:** Replaced the informal ending "na?" with the proper question tag "didn't you?" for more natural and professional English.
+- **Completeness:** Improved the recipient's response from "Oh, maybe. I don't remember. Maybe, yeah, I think so." to a clearer and more complete response expressing uncertainty.
+- **Clarity:** Clearly stated that the workshop is about managing Data, Cleaning, and Loading, and added "PM" to the time for better clarity.
+- **Professional Tone:** Changed "Hello, hi" and informal phrasing to a more polished and professional introduction.
+- **Grammar:** Improved sentence structure, article usage, and question formation while keeping the original meaning intact.
 
 ---
 
 ## 📊 Performance Metrics
 - **Fluency Score:** `7/10`
 - **Grammar Accuracy:** `High`
-- **Contextual Understanding:** `Excellent` (Identified the workshop topic and medical terms correctly).
+- **Contextual Understanding:** `Excellent` (Correctly identified the workshop topic as Data, Cleaning, and Loading and understood the context of the conversation).
 
 ---
 
