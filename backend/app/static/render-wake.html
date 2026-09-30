@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SpeakBetter — Render Server Wake-Up</title>
+<!-- Tailwind CSS v3 CDN with forms and container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration for custom colors and typography -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'canvas-bg': '#f5f4f0',
+            'canvas-card': '#eceae4',
+            'ink-dark': '#0f0f10',
+            'ink-muted': '#5c5e62',
+            'border-subtle': '#d8d5cd'
+          },
+          fontFamily: {
+            mono: ['SF Mono', 'ui-monospace', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <!-- BEGIN: Custom Typography and Micro-animations -->
+  <style data-purpose="typography">
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f5f4f0;
+      color: #0f0f10;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    .font-code {
+      font-family: 'Space Mono', monospace;
+    }
+  </style>
+  <style data-purpose="loading-bar-styling">
+    /* Precise reproduction of capsule progress bar from reference image */
+    .capsule-track {
+      border: 1.8px solid #000000;
+      border-radius: 9999px;
+      height: 22px;
+      background: #ffffff;
+      padding: 2.5px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .capsule-fill {
+      background-color: #000000;
+      height: 100%;
+      border-radius: 9999px;
+      min-width: 14px; /* Matches the rounded dot appearance at 4% */
+      transition: width 140ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .pulse-dot {
+      animation: blink 1.2s infinite ease-in-out;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.9); }
+    }
+
+    /* Subtle button spinner */
+    .spin { animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Status pill color variants */
+    .status-amber { color: #92400e; }
+    .status-emerald { color: #065f46; }
+    .status-neutral { color: #5c5e62; }
+  </style>
+  <!-- END: Custom Typography and Micro-animations -->
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-black selection:text-white">
+<!-- BEGIN: PersistentTopLoadingHeader -->
+<header class="sticky top-0 z-50 bg-[#f5f4f0]/95 backdrop-blur-md border-b border-border-subtle/80 px-4 py-3 sm:py-4 transition-all" data-purpose="sticky-loading-bar">
+<div class="max-w-4xl mx-auto w-full">
+<!-- Top Text Row: "waking..." on left and percentage indicator on right -->
+<div class="flex justify-between items-baseline mb-1.5 text-black font-code text-sm tracking-wider">
+<span class="font-normal select-none" id="wake-label">idle</span>
+<span class="font-normal text-right select-none" id="numeric-percentage">4%</span>
+</div>
+<!-- Capsule Loading Pill Container directly matching reference silhouette -->
+<div class="capsule-track w-full">
+<div aria-label="Wake progress" aria-valuemax="100" aria-valuemin="0" aria-valuenow="4" class="capsule-fill" id="dynamic-progress-pill" role="progressbar" style="width: 4%;"></div>
+</div>
+</div>
+</header>
+<!-- END: PersistentTopLoadingHeader -->
+<!-- BEGIN: MainContent -->
+<main class="flex-grow max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
+<!-- Header identity block -->
+<div class="border-b border-border-subtle pb-6 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4" data-purpose="profile-heading">
+<div>
+<div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-black text-white text-xs font-code font-medium mb-3">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
+SYS.RUN // VER. 2.4.0
+</div>
+<h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink-dark">Render Server Wake-Up</h1>
+<p class="text-ink-muted text-base sm:text-lg mt-1 font-normal">Cold-start health monitor for the SpeakBetter API on Render free tier.</p>
+</div>
+<!-- Live system telemetry badge -->
+<div class="text-left sm:text-right font-code text-xs text-ink-muted space-y-0.5 bg-canvas-card/60 p-3 rounded-lg border border-border-subtle">
+<div>SERVER STATUS: <span class="text-black font-bold" id="pipeline-status">SLEEPING</span></div>
+<div>TIME ELAPSED: <span class="text-black" id="time-elapsed">00:00.0s</span></div>
+<div>LAST PING: <span class="text-black" id="last-ping">— ms</span></div>
+<div class="text-ink-muted">NEXT PING IN: <span class="text-black font-bold" id="next-ping">—</span></div>
+</div>
+</div>
+<!-- App Overview & Engineering Challenges -->
+<div class="mb-8 p-4 bg-white/70 border border-border-subtle rounded-xl backdrop-blur-sm shadow-sm" data-purpose="app-overview">
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+<div>
+<span class="font-code text-xs uppercase tracking-wider text-ink-muted block">Application Overview</span>
+<p class="text-xs text-ink-dark/80 mt-0.5">SpeakBetter backend · FastAPI · Gemini 2.5 · MongoDB Atlas (Render free tier)</p>
+</div>
+<span class="font-code text-[10px] uppercase tracking-wider text-ink-muted bg-neutral-100 border border-neutral-200 rounded-full px-2 py-0.5">FREE TIER</span>
+</div>
+<p class="text-sm text-ink-muted leading-relaxed mb-4">
+Free-tier web services on Render sleep after 15 minutes of inactivity. The first request after a sleep triggers a cold
+start that can take 40–80 seconds before the container accepts traffic. This monitor pings the health endpoint
+continuously, then hands off to the live app once the instance is online.
+</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-ink-muted">
+<div class="flex gap-2"><span class="font-code text-black">•</span><span><strong class="text-ink-dark">Cold Start Latency</strong> — container spin-up blocks the first request.</span></div>
+<div class="flex gap-2"><span class="font-code text-black">•</span><span><strong class="text-ink-dark">Database Pooling</strong> — MongoDB connection must re-establish on wake.</span></div>
+<div class="flex gap-2"><span class="font-code text-black">•</span><span><strong class="text-ink-dark">API Rate Limits</strong> — Gemini quota resets per minute; burst on boot.</span></div>
+<div class="flex gap-2"><span class="font-code text-black">•</span><span><strong class="text-ink-dark">State Sync</strong> — in-memory caches rebuild after instance restart.</span></div>
+</div>
+</div>
+<!-- Wake-Up CTA Button -->
+<section class="mb-8" data-purpose="cta-section">
+<button id="main-cta" type="button" disabled class="group inline-flex items-center justify-center gap-3 w-full sm:w-auto px-6 py-3 rounded-xl bg-black text-white font-code font-semibold text-sm tracking-wider shadow-lg hover:bg-neutral-800 active:scale-95 transition-all">
+<span id="main-cta-label" class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+Start Render Server — Free Tier
+</span>
+<span id="main-cta-waking" class="hidden items-center gap-3">
+<svg id="main-cta-spinner" class="w-4 h-4 animate-[spin_0.9s_linear_infinite]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0113.43-5.57l1-1A10 10 0 0012 2v10H2z"></path></svg>
+<span>Waking render server…</span>
+</span>
+<span id="main-cta-countdown" class="font-code text-xs text-neutral-300 hidden">Next ping in 10s</span>
+</button>
+<p class="font-code text-xs text-ink-muted mt-2" id="cta-sub">Free-tier servers may take 40–80 seconds to wake up and start the app.</p>
+</section>
+<!-- Live Telemetry Cards -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 mb-8" data-purpose="metrics-grid">
+<div class="bg-white border border-border-subtle p-3.5 rounded-xl shadow-xs">
+<span class="font-code text-[11px] text-ink-muted block uppercase">Server Status</span>
+<span class="text-base font-bold font-code text-black mt-1 block" id="telemetry-status">SLEEPING</span>
+</div>
+<div class="bg-white border border-border-subtle p-3.5 rounded-xl shadow-xs">
+<span class="font-code text-[11px] text-ink-muted block uppercase">Elapsed</span>
+<span class="text-base font-bold font-code text-black mt-1 block" id="telemetry-elapsed">00:00.0s</span>
+</div>
+<div class="bg-white border border-border-subtle p-3.5 rounded-xl shadow-xs">
+<span class="font-code text-[11px] text-ink-muted block uppercase">Last Ping</span>
+<span class="text-base font-bold font-code text-black mt-1 block" id="telemetry-ping">— ms</span>
+</div>
+<div class="bg-white border border-border-subtle p-3.5 rounded-xl shadow-xs">
+<span class="font-code text-[11px] text-ink-muted block uppercase">Next Ping</span>
+<span class="text-base font-bold font-code text-black mt-1 block" id="telemetry-next">10s</span>
+</div>
+</div>
+<!-- Live Pipeline Task Checklist (wake-up stages) -->
+<div class="bg-white border border-border-subtle rounded-xl divide-y divide-border-subtle shadow-sm overflow-hidden" data-purpose="pipeline-task-list">
+<!-- Task Item 1: Idle -->
+<article class="p-4 flex items-start justify-between gap-4 transition hover:bg-neutral-50/70">
+<div class="flex items-start gap-3">
+<span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white">
+<span class="h-2 w-2 rounded-full bg-black"></span>
+</span>
+<div>
+<h3 class="text-sm font-semibold text-black leading-tight">Dispatch wake-up request</h3>
+<p class="text-xs text-ink-muted mt-1">Send the first health ping to the Render free-tier instance immediately.</p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="inline-block px-2 py-0.5 rounded text-[11px] font-code bg-neutral-100 text-neutral-500 font-medium border border-neutral-200" id="stage-1">PENDING</span>
+</div>
+</article>
+<!-- Task Item 2: Waking -->
+<article class="p-4 flex items-start justify-between gap-4 transition hover:bg-neutral-50/70 bg-neutral-50/30">
+<div class="flex items-start gap-3">
+<span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white">
+<span class="h-2 w-2 rounded-full bg-black pulse-dot"></span>
+</span>
+<div>
+<h3 class="text-sm font-semibold text-black leading-tight">Spinning up container instance</h3>
+<p class="text-xs text-ink-muted mt-1">Render boots the sleeping container; the first ping may time out or 502.</p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="inline-block px-2 py-0.5 rounded text-[11px] font-code bg-black text-white font-semibold" id="stage-2">WAITING</span>
+</div>
+</article>
+<!-- Task Item 3: Database -->
+<article class="p-4 flex items-start justify-between gap-4 transition hover:bg-neutral-50/70">
+<div class="flex items-start gap-3">
+<span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-neutral-300 bg-white">
+<span class="h-2 w-2 rounded-full bg-neutral-400"></span>
+</span>
+<div>
+<h3 class="text-sm font-semibold text-neutral-700 leading-tight">Re-establishing database connection</h3>
+<p class="text-xs text-ink-muted mt-1">MongoDB Atlas connection pool rebuilds as the FastAPI process starts.</p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="inline-block px-2 py-0.5 rounded text-[11px] font-code bg-neutral-100 text-neutral-500 font-medium border border-neutral-200" id="stage-3">QUEUED</span>
+</div>
+</article>
+<!-- Task Item 4: Ready -->
+<article class="p-4 flex items-start justify-between gap-4 transition hover:bg-neutral-50/70">
+<div class="flex items-start gap-3">
+<span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-neutral-300 bg-white">
+<span class="h-2 w-2 rounded-full bg-neutral-400"></span>
+</span>
+<div>
+<h3 class="text-sm font-semibold text-neutral-700 leading-tight">Health check passing</h3>
+<p class="text-xs text-ink-muted mt-1">The /ping endpoint returns 200 OK — the app is ready to serve traffic.</p>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="inline-block px-2 py-0.5 rounded text-[11px] font-code bg-neutral-100 text-neutral-500 font-medium border border-neutral-200" id="stage-4">QUEUED</span>
+</div>
+</article>
+</div>
+<!-- Error banner -->
+<div id="error-box" class="hidden mb-6 p-4 bg-white/80 border border-red-300 text-red-800 rounded-xl font-code text-xs">
+Server is taking longer than expected. Try again.
+</div>
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: MinimalFooter -->
+<footer class="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 border-t border-border-subtle text-xs text-ink-muted flex flex-col sm:flex-row items-center justify-between gap-3 font-code" data-purpose="page-footer">
+<div>
+SpeakBetter // <span id="current-year"></span> · Health Monitor v2.4.0
+</div>
+<div class="flex items-center gap-4">
+<a class="hover:text-black transition-colors" href="https://github.com/Ayushvish0512/speakbetter" target="_blank" rel="noopener" aria-label="GitHub">GitHub</a>
+<span class="text-neutral-300">/</span>
+<span class="text-ink-muted">Health: <span class="text-black font-bold" id="footer-status">SLEEPING</span></span>
+</div>
+</footer>
+<!-- END: MinimalFooter -->
+<!-- BEGIN: Server Wake-Up Engine -->
+<script data-purpose="server-wake-engine">
+  (function initWake() {
+    // ============================================================
+    // Configuration — change HEALTH_ENDPOINT to point at any backend
+    // ============================================================
+    const HEALTH_ENDPOINT = "https://speakbetter-lgfr.onrender.com/ping";
+    const APP_LAUNCH_URL  = "https://speakbetter-lgfr.onrender.com";
+    const INITIAL_INTERVAL_MS = 10000; // ping every 10s
+    const FAST_INTERVAL_MS    = 5000;  // after 50s, ping every 5s
+    const FAST_INTERVAL_AT_MS = 50000; // switch to fast polling at 50s
+    const REQUEST_TIMEOUT_MS  = 8000;  // per-ping timeout
+    const ESTIMATED_WAKE_MS   = 80000; // progress ramps 4%->95% over ~80s
+
+    // DOM references
+    const pill            = document.getElementById("dynamic-progress-pill");
+    const pct             = document.getElementById("numeric-percentage");
+    const wakeLabel       = document.getElementById("wake-label");
+    const statusPill      = document.getElementById("pipeline-status");
+    const timeElapsed     = document.getElementById("time-elapsed");
+    const lastPingEl      = document.getElementById("last-ping");
+    const nextPingEl      = document.getElementById("next-ping");
+    const cta             = document.getElementById("main-cta");
+    const ctaLabel        = document.getElementById("main-cta-label");
+    const ctaWaking       = document.getElementById("main-cta-waking");
+    const ctaCountdown    = document.getElementById("main-cta-countdown");
+    const ctaSub          = document.getElementById("cta-sub");
+    const errorBox        = document.getElementById("error-box");
+    const telemetryStatus = document.getElementById("telemetry-status");
+    const telemetryElapsed= document.getElementById("telemetry-elapsed");
+    const telemetryPing   = document.getElementById("telemetry-ping");
+    const telemetryNext   = document.getElementById("telemetry-next");
+    const stage1          = document.getElementById("stage-1");
+    const stage2          = document.getElementById("stage-2");
+    const stage3          = document.getElementById("stage-3");
+    const stage4          = document.getElementById("stage-4");
+    const footerStatus    = document.getElementById("footer-status");
+
+    // Runtime state
+    let state = "idle";            // idle | waking | ready | error
+    let startTime = 0;
+    let elapsedMs = 0;
+    let intervalMs = INITIAL_INTERVAL_MS;
+    let remainingSeconds = intervalMs / 1000;
+    let lastPingMs = null;
+    let tickTimer = null;
+    let countdownTimer = null;
+    let inFlight = false;         // guards against duplicate concurrent pings
+    let announcedReady = false;
+
+    // ---- UI helpers -------------------------------------------------------
+    function renderProgress(value) {
+      const v = Math.max(0, Math.min(100, Math.round(value)));
+      pill.style.width = v + "%";
+      pill.setAttribute("aria-valuenow", v);
+      pct.textContent = v + "%";
+    }
+
+    function setPillProgressFromElapsed() {
+      // animate 4% -> 95% across the estimated wake window; clamp at 95 until ready
+      const frac = Math.min(1, elapsedMs / ESTIMATED_WAKE_MS);
+      renderProgress(4 + frac * 91);
+    }
+
+    function setBusy(busy) {
+      cta.disabled = busy;
+      cta.setAttribute("aria-busy", busy ? "true" : "false");
+      if (ctaWaking && ctaLabel) {
+        ctaWaking.classList.toggle("hidden", !busy);
+        ctaLabel.classList.toggle("hidden", busy);
+      }
+    }
+
+    function formatElapsed(ms) {
+      const total = (ms / 1000).toFixed(1);
+      const mins = String(Math.floor(+total / 60)).padStart(2, "0");
+      const secs = String(+total % 60).padStart(4, "0");
+      return mins + ":" + secs + "s";
+    }
+
+    function setStatus(label, color) {
+      statusPill.textContent = label;
+      statusPill.className = color;
+      footerStatus.textContent = label;
+      footerStatus.className = color;
+      telemetryStatus.textContent = label;
+      telemetryStatus.className = color;
+    }
+
+    // ---- Telemetry updates ------------------------------------------------
+    function tick() {
+      elapsedMs = Date.now() - startTime;
+      timeElapsed.textContent = formatElapsed(elapsedMs);
+      telemetryElapsed.textContent = formatElapsed(elapsedMs);
+      setPillProgressFromElapsed();
+
+      // After 50s of waiting, switch to faster 5s polling
+      if (intervalMs === INITIAL_INTERVAL_MS && elapsedMs >= FAST_INTERVAL_AT_MS) {
+        intervalMs = FAST_INTERVAL_MS;
+        remainingSeconds = FAST_INTERVAL_MS / 1000;
+        renderCountdown();
+      }
+    }
+
+    function renderCountdown() {
+      const label = intervalMs === FAST_INTERVAL_MS ? "Next ping in " + remainingSeconds + "s" : "Next ping in " + remainingSeconds + "s";
+      ctaCountdown.textContent = label;
+      nextPingEl.textContent = remainingSeconds + "s";
+      telemetryNext.textContent = remainingSeconds + "s";
+    }
+
+    // ---- Real health check ------------------------------------------------
+    async function pingServer() {
+      if (inFlight) return { skipped: true };
+      inFlight = true;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      const t0 = performance.now();
+      let result = { ok: false, rt: 0 };
+      try {
+        const res = await fetch(HEALTH_ENDPOINT, { signal: controller.signal });
+        result.rt = Math.round(performance.now() - t0);
+        lastPingMs = result.rt;
+        lastPingEl.textContent = result.rt + " ms";
+        telemetryPing.textContent = result.rt + " ms";
+        result.ok = res.ok;
+        if (res.ok) result.status = res.status;
+      } catch (e) {
+        result.rt = Math.round(performance.now() - t0);
+        lastPingMs = result.rt;
+        lastPingEl.textContent = result.rt + " ms (timeout)";
+        telemetryPing.textContent = result.rt + " ms (timeout)";
+        result.ok = false;
+      } finally {
+        clearTimeout(timeout);
+        inFlight = false;
+      }
+      return result;
+    }
+
+    function onPingComplete(result) {
+      if (result.skipped) return;
+      if (result.ok) {
+        succeed();
+      } else {
+        // server still waking — keep polling, surface a friendly notice
+        if (state !== "ready") {
+          setStatus("WAKING SERVER", "status-amber");
+          stage1.textContent = "DONE";
+          stage2.textContent = "WAKING";
+          if (!errorBox.classList.contains("hidden")) return;
+          errorBox.classList.remove("hidden");
+          errorBox.textContent = "Server is taking longer than expected. Try again.";
+        }
+      }
+    }
+
+    // ---- State transitions ------------------------------------------------
+    function start() {
+      if (state !== "idle") return; // prevent duplicate starts
+      state = "waking";
+      startTime = Date.now();
+      elapsedMs = 0;
+      intervalMs = INITIAL_INTERVAL_MS;
+      remainingSeconds = intervalMs / 1000;
+      lastPingMs = 0;
+      announcedReady = false;
+
+      setBusy(true);
+      wakeLabel.textContent = "waking...";
+      ctaSub.textContent = "Pinging the Render free-tier instance. This may take 40–80 seconds.";
+      errorBox.classList.add("hidden");
+
+      stage1.textContent = "DONE";
+      stage2.textContent = "WAKING";
+      stage2.classList.remove("text-neutral-500", "bg-neutral-100", "border-neutral-200");
+      stage2.classList.add("text-white", "bg-black", "font-semibold");
+      setStatus("WAKING SERVER", "status-amber");
+
+      // immediate first health check
+      pingServer().then(onPingComplete);
+
+      // start the second tick (elapsed + progress ramp + interval switch)
+      tickTimer = setInterval(tick, 250);
+      tick();
+
+      // start the countdown; on zero, ping again and reset
+      countdownTimer = setInterval(() => {
+        remainingSeconds -= 1;
+        if (remainingSeconds <= 0) {
+          remainingSeconds = intervalMs / 1000;
+          pingServer().then(onPingComplete);
+        }
+        renderCountdown();
+      }, 1000);
+      renderCountdown();
+    }
+
+    function succeed() {
+      if (announcedReady) return;
+      announcedReady = true;
+      state = "ready";
+      clearInterval(tickTimer);
+      clearInterval(countdownTimer);
+      inFlight = false;
+
+      renderProgress(100);
+      setStatus("SERVER READY", "status-emerald");
+      stage2.textContent = "DONE";
+      stage3.textContent = "DONE";
+      stage4.textContent = "DONE";
+      stage3.classList.remove("text-neutral-700");
+      stage3.classList.add("text-black");
+      stage4.classList.remove("text-neutral-700");
+      stage4.classList.add("text-black");
+      telemetryStatus.classList.remove("status-amber");
+      telemetryStatus.classList.add("status-emerald");
+
+      // button becomes the launch action
+      ctaWaking.classList.add("hidden");
+      ctaLabel.classList.remove("hidden");
+      ctaLabel.innerHTML =
+        '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Launch Application \u2192';
+      cta.classList.remove("bg-black");
+      cta.classList.add("bg-emerald-700", "hover:bg-emerald-800");
+      cta.disabled = false;
+      cta.setAttribute("aria-busy", "false");
+      cta.removeEventListener("click", start);
+      cta.addEventListener("click", launchApp);
+      ctaSub.textContent = "Health check passed (200 OK). The server is accepting traffic.";
+      errorBox.classList.add("hidden");
+
+      // stop announcing progress; show final telemetry
+      nextPingEl.textContent = "—";
+      telemetryNext.textContent = "—";
+    }
+
+    function launchApp() {
+      window.location.href = APP_LAUNCH_URL;
+    }
+
+    function reset() {
+      state = "idle";
+      clearInterval(tickTimer);
+      clearInterval(countdownTimer);
+      inFlight = false;
+      announcedReady = false;
+      elapsedMs = 0;
+      intervalMs = INITIAL_INTERVAL_MS;
+      remainingSeconds = intervalMs / 1000;
+      lastPingMs = 0;
+
+      renderProgress(4);
+      wakeLabel.textContent = "idle";
+      setStatus("SLEEPING", "status-neutral");
+      telemetryStatus.textContent = "SLEEPING";
+      telemetryStatus.className = "status-neutral";
+      timeElapsed.textContent = "00:00.0s";
+      telemetryElapsed.textContent = "00:00.0s";
+      lastPingEl.textContent = "— ms";
+      telemetryPing.textContent = "— ms";
+      nextPingEl.textContent = "10s";
+      telemetryNext.textContent = "10s";
+
+      setBusy(false);
+      ctaWaking.classList.add("hidden");
+      ctaLabel.classList.remove("hidden");
+      ctaLabel.innerHTML =
+        '<span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span> Start Render Server — Free Tier';
+      cta.classList.remove("bg-emerald-700", "hover:bg-emerald-800");
+      cta.classList.add("bg-black", "hover:bg-neutral-800");
+      cta.disabled = false;
+      cta.setAttribute("aria-busy", "false");
+      cta.removeEventListener("click", launchApp);
+      cta.addEventListener("click", start);
+      ctaSub.textContent = "Free-tier servers may take 40–80 seconds to wake up and start the app.";
+      errorBox.classList.add("hidden");
+
+      stage1.textContent = "PENDING";
+      stage2.textContent = "WAITING";
+      stage2.classList.remove("text-white", "bg-black", "font-semibold");
+      stage2.classList.add("text-neutral-500", "bg-neutral-100", "border-neutral-200");
+      stage3.textContent = "QUEUED";
+      stage3.classList.remove("text-black");
+      stage3.classList.add("text-neutral-700");
+      stage4.textContent = "QUEUED";
+      stage4.classList.remove("text-black");
+      stage4.classList.add("text-neutral-700");
+    }
+
+    // error box offers a manual reset
+    errorBox.addEventListener("click", reset);
+    errorBox.style.cursor = "pointer";
+
+    // ---- Wire up ----------------------------------------------------------
+    cta.addEventListener("click", start);
+    // footer year
+    const yr = document.getElementById("current-year");
+    if (yr) yr.textContent = new Date().getFullYear();
+
+    // Initial render matching the pristine reference (4%)
+    renderProgress(4);
+  })();
+</script>
+<!-- END: Server Wake-Up Engine -->
+</body></html>
